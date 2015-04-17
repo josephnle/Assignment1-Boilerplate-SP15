@@ -8,11 +8,13 @@ var path = require('path');
 var handlebars = require('express-handlebars');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var MongoStore = require('connect-mongo')(session);
 var cookieParser = require('cookie-parser');
 var dotenv = require('dotenv');
 var Instagram = require('instagram-node-lib');
 var mongoose = require('mongoose');
 var graph = require('fbgraph');
+var _ = require('underscore');
 var app = express();
 
 //local dependencies
@@ -129,7 +131,8 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(session({ secret: 'keyboard cat',
                   saveUninitialized: true,
-                  resave: true}));
+                  resave: true,
+                  store: new MongoStore({ mongooseConnection: mongoose.connection })}));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -229,7 +232,26 @@ app.get('/photos', ensureAuthenticated, function(req, res){
 
 app.get('/likes', ensureAuthenticated, function(req, res) {
   graph.get('me/likes', function(err, data) {
-    res.render('likes', {likes: data.data});
+    var categories = [];
+    _.each(data.data, function(element, index, array) {
+      if(categories[element.category]) {
+        categories[element.category]++;
+      }
+      else {
+        categories[element.category] = 1;
+      }
+    });
+
+    console.log(categories);
+
+    graph.get('me', function(err, fbUser) {
+      return res.render('likes',
+        {
+          user: fbUser,
+          likes: data.data,
+          categories: categories
+        });
+    });
   });
 });
 
@@ -258,13 +280,13 @@ app.get('/auth/instagram/callback',
   });
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook', { scope: 'user_likes' }));
+  passport.authenticate('facebook', { scope: 'user_likes, user_posts' }));
 
 app.get('/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
   function(req, res) {
     // Successful authentication, redirect home.
-    res.redirect('/account');
+    res.redirect('/likes');
   });
 
 app.get('/logout', function(req, res){
