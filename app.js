@@ -63,16 +63,26 @@ passport.use(new InstagramStrategy({
     callbackURL: INSTAGRAM_CALLBACK_URL
   },
   function(accessToken, refreshToken, profile, done) {
-    // asynchronous verification, for effect...
-    models.User.findOrCreate({
-      "username": profile.username,
+    models.User.findOne({
       "instagram": {
-        "id": profile.id,
-        "access_token": accessToken
+        "id": profile.id
       }
-    }, function(err, user, created) {
-      // created will be true here
-      models.User.findOrCreate({}, function(err, user, created) {
+    }, function(err, user) {
+      if(err) return done(err);
+
+      if(!user) {
+        newUser = new models.User({
+          username: profile.username,
+          instagram: {
+            id: profile.id,
+            access_token: profile.access_token
+          }
+        });
+
+        newUser.save();
+      } else {
+        user.instagram.access_token = accessToken;
+        user.save();
         process.nextTick(function () {
           // To keep the example simple, the user's Instagram profile is returned to
           // represent the logged-in user.  In a typical application, you would want
@@ -80,7 +90,7 @@ passport.use(new InstagramStrategy({
           // and return that user instead.
           return done(null, user);
         });
-      })
+      }
     });
   }
 ));
@@ -92,31 +102,37 @@ passport.use(new FacebookStrategy({
     enableProof: false
   },
   function(accessToken, refreshToken, profile, done) {
-    // asynchronous verification, for effect...
-    models.User.findOrCreate({
-      "username": profile.id,
+    models.User.findOne({
       "facebook": {
-        "id": profile.id,
-        "access_token": accessToken
+        "id": profile.id
       }
-    }, function(err, user, created) {
-      graph.setAccessToken(accessToken);
+    }, function(err, user) {
+      if(err) return done(err);
 
-      console.log(user);
+      if(!user) {
+        newUser = new models.User({
+          username: profile.email,
+          facebook: {
+            id: profile.id,
+            access_token: profile.access_token
+          }
+        });
 
-      return done(null, user);
+        newUser.save();
+      } else {
+        user.facebook.access_token = accessToken;
+        user.save();
 
-      // created will be true here
-      //models.User.findOrCreate({ facebook: { id: profile.id } }, function(err, user, created) {
-      //  // created will be false here
-      //  process.nextTick(function () {
-      //    // To keep the example simple, the user's Instagram profile is returned to
-      //    // represent the logged-in user.  In a typical application, you would want
-      //    // to associate the Instagram account with a user record in your database,
-      //    // and return that user instead.
-      //    return done(null, profile);
-      //  });
-      //})
+        graph.setAccessToken(accessToken);
+
+        process.nextTick(function () {
+          // To keep the example simple, the user's Instagram profile is returned to
+          // represent the logged-in user.  In a typical application, you would want
+          // to associate the Instagram account with a user record in your database,
+          // and return that user instead.
+          return done(null, user);
+        });
+      }
     });
   }
 ));
@@ -241,8 +257,6 @@ app.get('/likes', ensureAuthenticated, function(req, res) {
         categories[element.category] = 1;
       }
     });
-
-    console.log(categories);
 
     graph.get('me', function(err, fbUser) {
       return res.render('likes',
