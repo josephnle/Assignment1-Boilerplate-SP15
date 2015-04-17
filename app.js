@@ -226,6 +226,12 @@ app.get('/photos', ensureAuthenticated, function(req, res){
   });
 });
 
+app.get('/likes', ensureAuthenticated, function(req, res) {
+  graph.get('me/likes', function(err, data) {
+    res.render('likes', {likes: data.data});
+  });
+});
+
 
 // GET /auth/instagram
 //   Use passport.authenticate() as route middleware to authenticate the
@@ -251,7 +257,7 @@ app.get('/auth/instagram/callback',
   });
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook'));
+  passport.authenticate('facebook', { scope: 'user_likes' }));
 
 app.get('/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
