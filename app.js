@@ -12,6 +12,7 @@ var cookieParser = require('cookie-parser');
 var dotenv = require('dotenv');
 var Instagram = require('instagram-node-lib');
 var mongoose = require('mongoose');
+var graph = require('fbgraph');
 var app = express();
 
 //local dependencies
@@ -97,14 +98,17 @@ passport.use(new FacebookStrategy({
   function(accessToken, refreshToken, profile, done) {
     // asynchronous verification, for effect...
     models.User.findOrCreate({
-      "username": profile.email,
+      "username": profile.id,
       "facebook": {
         "id": profile.id,
         "access_token": accessToken
       }
     }, function(err, user, created) {
+      graph.setAccessToken(accessToken);
 
-      return done(err, user);
+      console.log(user);
+
+      return done(null, user);
 
       // created will be true here
       //models.User.findOrCreate({ facebook: { id: profile.id } }, function(err, user, created) {
@@ -164,12 +168,34 @@ app.get('/account', ensureAuthenticated, function(req, res){
   query.findOne(function (err, user) {
     if(err) return handleError(err);
     if(user) {
-      Instagram.users.info({
-        user_id: req.user.instagram.id,
-        complete: function(data) {
-          res.render('account', {user: data});
-        }
-      });
+      if(user.instagram.id) {
+        Instagram.users.info({
+          user_id: req.user.instagram.id,
+          complete: function(data) {
+            if(user.facebook.id) {
+              graph.get('me', function(err, fbUser) {
+                return res.render('account',
+                  {
+                    facebook: fbUser,
+                    instagram: data
+                  });
+              });
+            }
+
+            return res.render('account', {instagram: data});
+          }
+        });
+      }
+
+      // If user does not have instagram account attached
+      if(user.facebook.id) {
+        graph.get('me', function(err, fbUser) {
+          return res.render('account',
+            {
+              facebook: fbUser
+            });
+        });
+      }
     }
   });
 

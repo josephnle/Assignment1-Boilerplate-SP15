@@ -1,8 +1,22 @@
 <div class="centered column">
-  <h1 class="ui header">Hi, {{user.full_name}}!</h1>
   <div class="ui segment">
-    <p>ID: {{user.id}}</p>
-    <p>Username: {{user.username}}</p>
-    <p>Name:{{user.full_name}}</p>
+      {{#if instagram}}
+        <h2 class="ui header">Instagram</h2>
+
+        <p>ID: {{instagram.id}}</p>
+
+        <p>Username: {{instagram.username}}</p>
+
+        <p>Name:{{instagram.full_name}}</p>
+      {{/if}}
+
+      {{#if facebook}}
+        <h2 class="ui header">Facebook</h2>
+
+        <p>ID: {{facebook.id}}</p>
+
+        <p>Name:{{facebook.name}}</p>
+      {{/if}}
+
   </div>
 </div>
