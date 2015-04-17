@@ -167,6 +167,20 @@ function ensureAuthenticated(req, res, next) {
   res.redirect('/login');
 }
 
+function ensureFacebookAuthenticated(req, res, next) {
+  if (req.isAuthenticated() && req.user.facebook.hasOwnProperty('access_token')) {
+    return next();
+  }
+  res.redirect('/login');
+}
+
+function ensureInstagramAuthenticated(req, res, next) {
+  if (req.isAuthenticated() && req.user.instagram.hasOwnProperty('access_token')) {
+    return next();
+  }
+  res.redirect('/login');
+}
+
 //routes
 app.get('/', function(req, res){
   res.render('login');
@@ -214,7 +228,7 @@ app.get('/login', function(req, res){
 //
 //});
 
-app.get('/photos', ensureAuthenticated, function(req, res){
+app.get('/photos', ensureInstagramAuthenticated, function(req, res){
   console.log('photos');
   var query  = models.User.where({ username: req.user.username });
   query.findOne(function (err, user) {
@@ -246,7 +260,7 @@ app.get('/photos', ensureAuthenticated, function(req, res){
   });
 });
 
-app.get('/likes', ensureAuthenticated, function(req, res) {
+app.get('/likes', ensureFacebookAuthenticated, function(req, res) {
   graph.get('me/likes', function(err, data) {
     function getRandomColor() {
       var letters = '0123456789ABCDEF'.split('');

@@ -2,17 +2,27 @@
   <h2 class="ui header">Instagram Account Information</h2>
 
   <div class="ui segment">
-    <p>ID: {{user.id}}</p>
+    <div class="ui items">
 
-    <p>Username: {{user.username}}</p>
+      <div class="ui item">
+        <div class="ui tiny circular image">
+          <img src="{{user.profile_picture}}">
+        </div>
+        <div class="content">
+          <div class="header">{{user.full_name}}</div>
+          <div class="description">
+            <p>{{user.bio}}</p>
+          </div>
+        </div>
+      </div>
 
-    <p>Name:{{user.full_name}}</p>
+    </div>
   </div>
 
   <div class="ui divider"></div>
 
     <h2 class="ui header">Photos</h2>
-  <div class="ui cards">
+  <div class="ui three cards">
       {{#each photos}}
         <div class="card">
           <a class="image">
