@@ -69,22 +69,16 @@ passport.use(new InstagramStrategy({
         "access_token": accessToken
       }
     }, function(err, user, created) {
-      return done(err, user);
-
-      //return done(null, user);
       // created will be true here
-      //models.User.findOrCreate({}, function(err, user, created) {
-      //  //console.log(user);
-      //  //done(null, user);
-      //  // created will be false here
-      //  //process.nextTick(function () {
-      //  //  // To keep the example simple, the user's Instagram profile is returned to
-      //  //  // represent the logged-in user.  In a typical application, you would want
-      //  //  // to associate the Instagram account with a user record in your database,
-      //  //  // and return that user instead.
-      //  //  return done(null, profile);
-      //  //});
-      //})
+      models.User.findOrCreate({}, function(err, user, created) {
+        process.nextTick(function () {
+          // To keep the example simple, the user's Instagram profile is returned to
+          // represent the logged-in user.  In a typical application, you would want
+          // to associate the Instagram account with a user record in your database,
+          // and return that user instead.
+          return done(null, user);
+        });
+      })
     });
   }
 ));
@@ -148,8 +142,8 @@ app.set('port', process.env.PORT || 3000);
 //   the request will proceed.  Otherwise, the user will be redirected to the
 //   login page.
 function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) { 
-    return next(); 
+  if (req.isAuthenticated()) {
+    return next();
   }
   res.redirect('/login');
 }
@@ -163,46 +157,47 @@ app.get('/login', function(req, res){
   res.render('login', { user: req.user });
 });
 
-app.get('/account', ensureAuthenticated, function(req, res){
-  var query  = models.User.where({ username: req.user.username });
-  query.findOne(function (err, user) {
-    if(err) return handleError(err);
-    if(user) {
-      if(user.instagram.id) {
-        Instagram.users.info({
-          user_id: req.user.instagram.id,
-          complete: function(data) {
-            if(user.facebook.id) {
-              graph.get('me', function(err, fbUser) {
-                return res.render('account',
-                  {
-                    facebook: fbUser,
-                    instagram: data
-                  });
-              });
-            }
-
-            return res.render('account', {instagram: data});
-          }
-        });
-      }
-
-      // If user does not have instagram account attached
-      if(user.facebook.id) {
-        graph.get('me', function(err, fbUser) {
-          return res.render('account',
-            {
-              facebook: fbUser
-            });
-        });
-      }
-    }
-  });
-
-});
+//app.get('/account', ensureAuthenticated, function(req, res){
+//  var query  = models.User.where({ username: req.user.username });
+//  query.findOne(function (err, user) {
+//    if(err) return handleError(err);
+//    if(user) {
+//      if(user.instagram.id) {
+//        Instagram.users.info({
+//          user_id: req.user.instagram.id,
+//          complete: function(data) {
+//            if(user.facebook.id) {
+//              graph.get('me', function(err, fbUser) {
+//                return res.render('account',
+//                  {
+//                    facebook: fbUser,
+//                    instagram: data
+//                  });
+//              });
+//            }
+//
+//            return res.render('account', {instagram: data});
+//          }
+//        });
+//      }
+//
+//      // If user does not have instagram account attached
+//      if(user.facebook.id) {
+//        graph.get('me', function(err, fbUser) {
+//          return res.render('account',
+//            {
+//              facebook: fbUser
+//            });
+//        });
+//      }
+//    }
+//  });
+//
+//});
 
 app.get('/photos', ensureAuthenticated, function(req, res){
-  var query  = models.User.where({ username: req.user.instagram.username });
+  console.log('photos');
+  var query  = models.User.where({ username: req.user.username });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
@@ -219,9 +214,15 @@ app.get('/photos', ensureAuthenticated, function(req, res){
             //insert json object into image array
             return tempJSON;
           });
-          res.render('photos', {photos: imageArr});
+
+          Instagram.users.info({
+            user_id: req.user.instagram.id,
+            complete: function(userData) {
+              return res.render('photos', {photos: imageArr, user: userData});
+            }
+          });
         }
-      }); 
+      });
     }
   });
 });
@@ -250,10 +251,10 @@ app.get('/auth/instagram',
 //   request.  If authentication fails, the user will be redirected back to the
 //   login page.  Otherwise, the primary route function function will be called,
 //   which, in this example, will redirect the user to the home page.
-app.get('/auth/instagram/callback', 
+app.get('/auth/instagram/callback',
   passport.authenticate('instagram', { failureRedirect: '/login'}),
   function(req, res) {
-    res.redirect('/account');
+    res.redirect('/photos');
   });
 
 app.get('/auth/facebook',
