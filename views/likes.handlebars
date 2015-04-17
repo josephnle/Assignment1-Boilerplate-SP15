@@ -1,6 +1,19 @@
 <div class="ui centered column">
-{{#each likes}}
-    <p>Name: {{name}}</p>
-    <p>ID: {{id}}</p>
-{{/each}}
+  <h2 class="ui header">Facebook</h2>
+
+  <div class="ui segment">
+    <p>ID: {{user.id}}</p>
+
+    <p>Name:{{user.name}}</p>
+
+  </div>
+
+  <div class="ui divider"></div>
+
+  <h2 class="ui header">Your Likes by Category</h2>
+    <div class="ui center aligned segment">
+      <p>Hover over a segment for more information</p>
+      <canvas id="categoryChart" width="400" height="400"></canvas>
+    </div>
 </div>
+

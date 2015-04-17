@@ -248,22 +248,44 @@ app.get('/photos', ensureAuthenticated, function(req, res){
 
 app.get('/likes', ensureAuthenticated, function(req, res) {
   graph.get('me/likes', function(err, data) {
-    var categories = [];
+    function getRandomColor() {
+      var letters = '0123456789ABCDEF'.split('');
+      var color = '#';
+      for (var i = 0; i < 6; i++ ) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    var categoriesMap = [];
+
     _.each(data.data, function(element, index, array) {
-      if(categories[element.category]) {
-        categories[element.category]++;
+      if(categoriesMap[element.category]) {
+        categoriesMap[element.category]++;
       }
       else {
-        categories[element.category] = 1;
+        categoriesMap[element.category] = 1;
       }
     });
+
+    var categories = [];
+
+    for(var key in categoriesMap) {
+      if(categoriesMap.hasOwnProperty(key)) {
+        var temp = {};
+        temp.label = key;
+        temp.value = categoriesMap[key];
+        temp.color = getRandomColor();
+        categories.push(temp);
+      }
+    }
 
     graph.get('me', function(err, fbUser) {
       return res.render('likes',
         {
           user: fbUser,
           likes: data.data,
-          categories: categories
+          categories: JSON.stringify(categories)
         });
     });
   });
