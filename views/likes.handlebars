@@ -1,10 +1,23 @@
 <div class="ui centered column">
-  <h2 class="ui header">Facebook</h2>
+  <h2 class="ui header">Facebook Account Information</h2>
 
   <div class="ui segment">
-    <p>ID: {{user.id}}</p>
+    <div class="ui items">
 
-    <p>Name:{{user.name}}</p>
+      <div class="item">
+        <!--<div class="ui tiny circular image">-->
+          <!--<img src="{{user.profile_picture}}">-->
+        <!--</div>-->
+        <div class="content">
+          <div class="header">{{user.name}}</div>
+          <div class="description">
+            <p>{{user.bio}}</p>
+            <p><strong>User ID:</strong> {{user.id}}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
 
   </div>
 
