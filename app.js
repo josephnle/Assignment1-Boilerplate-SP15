@@ -2,6 +2,7 @@
 var express = require('express');
 var passport = require('passport');
 var InstagramStrategy = require('passport-instagram').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
 var http = require('http');
 var path = require('path');
 var handlebars = require('express-handlebars');
@@ -61,22 +62,61 @@ passport.use(new InstagramStrategy({
   function(accessToken, refreshToken, profile, done) {
     // asynchronous verification, for effect...
     models.User.findOrCreate({
-      "name": profile.username,
-      "id": profile.id,
-      "access_token": accessToken 
+      "username": profile.username,
+      "instagram": {
+        "id": profile.id,
+        "access_token": accessToken
+      }
     }, function(err, user, created) {
-      
+      return done(err, user);
+
+      //return done(null, user);
       // created will be true here
-      models.User.findOrCreate({}, function(err, user, created) {
-        // created will be false here
-        process.nextTick(function () {
-          // To keep the example simple, the user's Instagram profile is returned to
-          // represent the logged-in user.  In a typical application, you would want
-          // to associate the Instagram account with a user record in your database,
-          // and return that user instead.
-          return done(null, profile);
-        });
-      })
+      //models.User.findOrCreate({}, function(err, user, created) {
+      //  //console.log(user);
+      //  //done(null, user);
+      //  // created will be false here
+      //  //process.nextTick(function () {
+      //  //  // To keep the example simple, the user's Instagram profile is returned to
+      //  //  // represent the logged-in user.  In a typical application, you would want
+      //  //  // to associate the Instagram account with a user record in your database,
+      //  //  // and return that user instead.
+      //  //  return done(null, profile);
+      //  //});
+      //})
+    });
+  }
+));
+
+passport.use(new FacebookStrategy({
+    clientID: process.env.FACEBOOK_APP_ID,
+    clientSecret: process.env.FACEBOOK_APP_SECRET,
+    callbackURL: "http://localhost:3000/auth/facebook/callback",
+    enableProof: false
+  },
+  function(accessToken, refreshToken, profile, done) {
+    // asynchronous verification, for effect...
+    models.User.findOrCreate({
+      "username": profile.email,
+      "facebook": {
+        "id": profile.id,
+        "access_token": accessToken
+      }
+    }, function(err, user, created) {
+
+      return done(err, user);
+
+      // created will be true here
+      //models.User.findOrCreate({ facebook: { id: profile.id } }, function(err, user, created) {
+      //  // created will be false here
+      //  process.nextTick(function () {
+      //    // To keep the example simple, the user's Instagram profile is returned to
+      //    // represent the logged-in user.  In a typical application, you would want
+      //    // to associate the Instagram account with a user record in your database,
+      //    // and return that user instead.
+      //    return done(null, profile);
+      //  });
+      //})
     });
   }
 ));
@@ -120,17 +160,29 @@ app.get('/login', function(req, res){
 });
 
 app.get('/account', ensureAuthenticated, function(req, res){
-  res.render('account', {user: req.user});
+  var query  = models.User.where({ username: req.user.username });
+  query.findOne(function (err, user) {
+    if(err) return handleError(err);
+    if(user) {
+      Instagram.users.info({
+        user_id: req.user.instagram.id,
+        complete: function(data) {
+          res.render('account', {user: data});
+        }
+      });
+    }
+  });
+
 });
 
 app.get('/photos', ensureAuthenticated, function(req, res){
-  var query  = models.User.where({ name: req.user.username });
+  var query  = models.User.where({ username: req.user.instagram.username });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
       // doc may be null if no document matched
       Instagram.users.liked_by_self({
-        access_token: user.access_token,
+        access_token: user.instagram.access_token,
         complete: function(data) {
           //Map will iterate through the returned data obj
           var imageArr = data.map(function(item) {
@@ -169,6 +221,16 @@ app.get('/auth/instagram',
 app.get('/auth/instagram/callback', 
   passport.authenticate('instagram', { failureRedirect: '/login'}),
   function(req, res) {
+    res.redirect('/account');
+  });
+
+app.get('/auth/facebook',
+  passport.authenticate('facebook'));
+
+app.get('/auth/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect home.
     res.redirect('/account');
   });
 
